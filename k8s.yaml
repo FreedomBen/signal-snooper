@@ -1,0 +1,38 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: signal-snooper
+  name: signal-snooper
+  namespace: signal-snooper-prod
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: signal-snooper
+  template:
+    metadata:
+      labels:
+        app: signal-snooper
+      namespace: signal-snooper-prod
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - image: docker.io/freedomben/signal-snooper:latest
+        name: signal-snooper
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 9999
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /health_check/readiness
+            port: 9999
+          initialDelaySeconds: 5
+          periodSeconds: 2
+        securityContext:
+          allowPrivilegeEscalation: false
+
