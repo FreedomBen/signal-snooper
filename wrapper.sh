@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+HEALTH_CHECKS_PID=''
+
 trap handle_SIGHUP SIGHUP
 trap handle_SIGINT SIGINT
 trap handle_SIGQUIT SIGQUIT
@@ -37,6 +39,10 @@ trap handle_SIGRTMIN SIGRTMIN
 handle_signal()
 {
   echo "$(date):  ${1}"
+
+  if [ -n "${HEALTH_CHECKS_PID}" ]; then
+    kill -s "${1}" "${HEALTH_CHECKS_PID}"
+  fi
 
   if [ -n "${2}" ]; then
     exit "${2}"
@@ -236,6 +242,17 @@ handle_SIGRTMIN()
 }
 
 echo "Started as process $$"
+
+if [[ "$@" =~ "health" ]]; then
+  if [ -x "health_checks.sh" ]; then
+    echo "Starting health checks service"
+    bash "health_checks.sh" >/dev/null &
+  else
+    echo "Health checks requested but executable not present!"
+  fi
+else
+  echo "Health checks service disabled.  Not starting.  Pass --health to enable"
+fi
 
 # The trapped signals will be investigated every 0.1 seconds when the sleep exits
 while true; do
